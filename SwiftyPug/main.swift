@@ -23,52 +23,41 @@ enum Token
 let tokenList : [(String, (String) -> Token?)] =
 [
     ("[\t \n]", {_ in return nil}),
-    ("[a-zA-z0-9]*", {$0 == "def" ? .Define : .Identifier($0)}),
+    ("[a-zA-Z][a-zA-z0-9]*", {$0 == "def" ? .Define : .Identifier($0)}),
     ("[0-9.]+",{return Token.Number(Float($0)!)}),
     ("\\(",{_ in return .ParenOpen}),
-    ("\\(",{_ in return .ParenClose})
+    ("\\)",{_ in return .ParenClose})
 ]
-
-var str = "0.9834259734892asdlfkjsdlakflsdkamflasdkmfl"
-let match = str.rangeOfString("[0-9.]+", options: .RegularExpressionSearch)
-print(str.substringWithRange(match!))
-let index = str.substringWithRange(match!).characters.count
-str = str.substringFromIndex(str.startIndex.advancedBy(index))
-print(str)
-
-func tokenize (input:String) -> [Token]
+let str = "def xyz() = 2 + 1"
+func tokenize(input:String) -> [Token]
 {
-	var tokens: [Token] = []
-	var content = input
-	while (content.characters.count > 0)
+	var str = input
+	var tokens : [Token] = []
+	while(str.characters.count > 0)
 	{
 		var matched = false
-		for(pattern, generator) in tokenList
+		for (pattern, generator) in tokenList
 		{
-			guard let match = content.rangeOfString(pattern, options: .RegularExpressionSearch)
-			else
+			if let match = str.rangeOfString(pattern, options: .RegularExpressionSearch) where (match.startIndex == str.startIndex)
 			{
-				break
-			}
-			if match != nil
-			{
-				if let t = generator(content.substringWithRange(match))
-				{
-					tokens.append(t)
-				}
-				content = content.substringFromIndex(content.startIndex.advancedBy(content.substringWithRange(match).characters.count))
 				matched = true
+				if let token = generator(str.substringWithRange(match))
+				{
+					tokens.append(token)
+				}
+				let index = str.substringWithRange(match).characters.count
+				str = str.substringFromIndex(str.startIndex.advancedBy(index))
 				break
 			}
-			if !matched
-			{
-				let index = content.startIndex.advancedBy(1)
-				tokens.append(.Other(content.substringToIndex(index)))
-				content = content.substringFromIndex(index)
-			}
+		}
+		if !matched
+		{
+			let index = str.startIndex.advancedBy(1)
+			tokens.append(.Other(str.substringToIndex(index)))
+			str = str.substringFromIndex(index)
 		}
 	}
 	return tokens
 }
 
-print(tokenize("0.9834259734892 asdlfkjsdlakflsdkamflasdkmfl"))
+print(tokenize(str))
